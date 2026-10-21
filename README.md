@@ -51,7 +51,7 @@ VERIFICATION.md                本次实际检查结果与未运行项
 
 ## 签名与运行
 
-**没有 Mac 的 Windows 用户：**按 [NO_MAC.md](NO_MAC.md) 使用云端编译与 Windows 安装。本工程已包含 GitHub Actions 工作流；云端编译及真机安装尚未实际执行。
+**没有 Mac 的 Windows 用户：**按 [NO_MAC.md](NO_MAC.md) 使用云端编译与 Windows 安装。首次云端编译及 13 个模拟器测试已通过；实体 iPhone 签名安装与通知投递尚未实测。
 
 在 Mac 上用支持手机当前 iOS 版本的 Xcode 打开 `DoseLog.xcodeproj`。部署目标为 iOS 16.0。进入应用 target 的 **Signing & Capabilities**，开启 **Automatically manage signing**，选择自己的 Team，把 `com.example.personal.DoseLog` 改为唯一 Bundle Identifier。连接并信任 iPhone，按提示在手机开启开发者模式，选择手机作为运行目标后按 **⌘R**。首次签名需要 Apple Account 和网络；App 运行中的记录与通知不使用服务器。
 

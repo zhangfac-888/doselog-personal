@@ -4,8 +4,8 @@
 
 ## 第一次安装
 
-1. 在 GitHub 新建**私人仓库**，把本文件所在的 `DoseLog` 文件夹内容上传到仓库根目录。上传后应能在 GitHub 仓库首页看到 `DoseLog.xcodeproj` 和 `.github/workflows/build-iphone.yml`。不要上传个人服药数据或 Apple 账号密码。GitHub 私人仓库的云端运行额度可能收费，以你的账号页面为准。
-2. 上传完成后，GitHub 会自动开始编译；也可以在 **Actions → Build iPhone app without a Mac → Run workflow** 手动启动。等 `build-and-test` 变绿；它会在云端编译并运行工程已有的自动测试。进入这次运行，在 **Artifacts** 下载 `DoseLog-unsigned-iPhone`，解压后得到 `DoseLog-unsigned.ipa`。这是**未签名**安装包，不能直接在 iPhone 上点开。
+1. [私人仓库](https://github.com/zhangfac-888/doselog-personal)已经建好，源码已上传；无需重新建仓库。首次[云端编译](https://github.com/zhangfac-888/doselog-personal/actions/runs/39548049770)通过，13 个自动测试通过。GitHub 私人仓库的云端运行额度可能收费，以你的账号页面为准。
+2. 打开上面的云端编译页面，在 **Artifacts** 下载 `DoseLog-unsigned-iPhone`，解压后得到 `DoseLog-unsigned.ipa`。本机也已保存同一文件。它是**未签名**安装包，不能直接在 iPhone 上点开。更新代码后可在 **Actions → Build iPhone app without a Mac → Run workflow** 再次编译。
 3. 在 Windows 上从 [Sideloadly 官网](https://sideloadly.io/)安装它所要求的 Windows 组件和 Sideloadly。用数据线连接 iPhone，在手机上点“信任这台电脑”。把 `DoseLog-unsigned.ipa` 拖入 Sideloadly，选择 **Apple ID sideload**，填入你自己的 Apple 账号，开始安装。安装后按手机提示开启“开发者模式”，并在“设置 → 通用 → VPN 与设备管理”信任该开发者。
 
 Sideloadly 是第三方安装工具，需要你在它的界面输入 Apple 账号。只从其官网下载；我们不会代你输入、保存或上传账号信息。如果不愿使用第三方工具，改用 Apple 付费开发者账号和云端签名流程。
