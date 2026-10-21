@@ -16,3 +16,22 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs DoseLog-Android-test.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging DoseLog-Android-test.apk | head -n 12
+      - name: Install and open on a clean Android 15 emulator
+        run: |
+          sdkmanager 'emulator' 'system-images;android-35;google_apis;x86_64'
+          printf 'no\n' | avdmanager create avd --force -n DoseLogTest -k 'system-images;android-35;google_apis;x86_64'
+          if [ -e /dev/kvm ]; then sudo chmod a+rw /dev/kvm; fi
+          "$ANDROID_HOME/emulator/emulator" -avd DoseLogTest -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > /tmp/doselog-emulator.log 2>&1 &
+          timeout 240 adb wait-for-device
+          booted=false
+          for i in $(seq 1 120); do
+            if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1' ]; then booted=true; break; fi
+            sleep 2
+          done
+          test "$booted" = true
+          adb install DoseLog-Android-test.apk
+          adb shell am start -n com.personal.doselog/.MainActivity
+          sleep 5
+          adb shell pidof com.personal.doselog
+          adb shell uiautomator dump /sdcard/window.xml
+          adb shell cat /sdcard/window.xml | grep '用药记录'
