@@ -60,7 +60,10 @@ public final class MainActivity extends Activity {
 
     private void save() {
         try { store.save(book); Reminders.sync(this, book); render(); }
-        catch (Exception e) { Toast.makeText(this, "保存失败：" + e.getMessage(), Toast.LENGTH_LONG).show(); }
+        catch (Exception e) {
+            try { book = store.load(); render(); } catch (Exception ignored) { }
+            Toast.makeText(this, "保存失败，操作未记入：" + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private int dp(int value) { return (int) (value * getResources().getDisplayMetrics().density + .5f); }
@@ -109,7 +112,8 @@ public final class MainActivity extends Activity {
             String label = due == null ? "" : " · 本次计划 " + MedicineBook.fmt(due.at, zone) + " / " + dose(due.amount) + m.unit;
             root.addView(text(m.label() + label, 16, true));
             if (due != null && !book.recorded(due)) root.addView(button("已服 " + m.name + " " + dose(due.amount) + m.unit + " · 记当前时间", () -> {
-                book.take(m.id, due.amount, System.currentTimeMillis(), System.currentTimeMillis(), zone);
+                long actual = System.currentTimeMillis();
+                book.takeScheduled(due, actual, actual);
                 save(); Reminders.lowStock(this, book, m);
             }));
             else if (due != null) root.addView(text("本次计划已记录", 14, false));

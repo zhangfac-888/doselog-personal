@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -17,8 +18,10 @@ public final class BookStore {
     public BookStore(Context context) { file = new AtomicFile(context.getFileStreamPath("medicine-book.json")); }
 
     public MedicineBook load() throws IOException, JSONException {
-        if (!file.getBaseFile().exists()) return new MedicineBook();
-        JSONObject root = new JSONObject(new String(file.readFully(), StandardCharsets.UTF_8));
+        byte[] saved;
+        try { saved = file.readFully(); }
+        catch (FileNotFoundException e) { return new MedicineBook(); }
+        JSONObject root = new JSONObject(new String(saved, StandardCharsets.UTF_8));
         if (root.getInt("version") != 1) throw new JSONException("未知数据版本");
         MedicineBook book = new MedicineBook();
         JSONArray a = root.getJSONArray("medicines");

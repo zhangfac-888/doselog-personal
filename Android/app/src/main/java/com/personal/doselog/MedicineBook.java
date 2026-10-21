@@ -178,18 +178,26 @@ public final class MedicineBook {
     }
 
     public Due closestDue(String medicineId, long now, ZoneId zone) {
-        Due best = null, alreadyRecorded = null;
+        Due best = null;
         long distance = Long.MAX_VALUE;
-        long recordedDistance = Long.MAX_VALUE;
         for (Due due : scheduled(now - 24L * 3_600_000, now + 24L * 3_600_000, zone)) {
             if (!due.medicineId.equals(medicineId)) continue;
             long delta = Math.abs(due.at - now);
             if (delta > 12L * 3_600_000) continue;
-            if (recorded(due)) {
-                if (delta < recordedDistance) { recordedDistance = delta; alreadyRecorded = due; }
-            } else if (delta < distance) { distance = delta; best = due; }
+            if (delta < distance || (delta == distance && best != null && recorded(best) && !recorded(due))) {
+                distance = delta; best = due;
+            }
         }
-        return best != null ? best : alreadyRecorded;
+        return best;
+    }
+
+    public Dose takeScheduled(Due due, long takenAt, long enteredAt) {
+        if (plan(due.planId) == null || medicine(due.medicineId) == null || due.amount.signum() <= 0)
+            throw new IllegalArgumentException("计划或药品无效");
+        Dose d = new Dose();
+        d.medicineId = due.medicineId; d.amount = due.amount; d.planId = due.planId; d.scheduledAt = due.at;
+        d.takenAt = takenAt; d.enteredAt = enteredAt; d.backfilled = takenAt != enteredAt;
+        doses.add(d); return d;
     }
 
     public Dose take(String medicineId, BigDecimal amount, long takenAt, long enteredAt, ZoneId zone) {

@@ -68,4 +68,12 @@ public class MedicineBookTest {
         assertTrue(findings.stream().anyMatch(f -> f.title.contains("间隔")));
         assertTrue(findings.stream().anyMatch(f -> f.title.contains("超过计划")));
     }
+
+    @Test public void repeatTapMatchesSameOccurrenceInsteadOfTomorrow() {
+        MedicineBook b = setup(); MedicineBook.Plan p = daily(b, 8 * 60);
+        b.take(p.medicineId, BigDecimal.ONE, at(20, 8, 0), at(20, 8, 0), zone);
+        MedicineBook.Dose duplicate = b.take(p.medicineId, BigDecimal.ONE, at(20, 8, 1), at(20, 8, 1), zone);
+        assertEquals(Long.valueOf(at(20, 8, 0)), duplicate.scheduledAt);
+        assertTrue(b.audit(at(20, 8, 2), zone).stream().anyMatch(f -> f.title.contains("超过计划")));
+    }
 }
