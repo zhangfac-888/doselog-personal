@@ -87,4 +87,19 @@ public class MedicineBookTest {
         assertTrue(b.recorded(due));
         assertEquals(0, new BigDecimal("-1").compareTo(b.balance(p.medicineId)));
     }
+
+    @Test public void explicitUnplannedDoseDoesNotSilentlyAttachToNearestPlan() {
+        MedicineBook b = setup(); MedicineBook.Plan p = daily(b, 8 * 60);
+        MedicineBook.Dose d = b.takeUnplanned(p.medicineId, BigDecimal.ONE, at(20, 8, 1), at(20, 8, 1));
+        assertNull(d.planId); assertNull(d.scheduledAt);
+        MedicineBook.Due due = b.scheduled(at(20, 0, 0), at(20, 23, 0), zone).get(0);
+        assertFalse(b.recorded(due));
+    }
+
+    @Test public void unplannedDoseOnOffCycleDayIsFlagged() {
+        MedicineBook b = setup(); MedicineBook.Plan p = daily(b, 8 * 60);
+        p.onDays = 1; p.offDays = 1; p.cycleAnchor = at(19, 0, 0);
+        b.takeUnplanned(p.medicineId, BigDecimal.ONE, at(20, 8, 0), at(20, 8, 0));
+        assertTrue(b.audit(at(20, 9, 0), zone).stream().anyMatch(f -> f.title.contains("计划外")));
+    }
 }

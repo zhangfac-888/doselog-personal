@@ -222,6 +222,13 @@ public final class MedicineBook {
         return d;
     }
 
+    public Dose takeUnplanned(String medicineId, BigDecimal amount, long takenAt, long enteredAt) {
+        if (amount == null || amount.signum() <= 0 || medicine(medicineId) == null) throw new IllegalArgumentException("药品或剂量无效");
+        Dose d = new Dose(); d.medicineId = medicineId; d.amount = amount;
+        d.takenAt = takenAt; d.enteredAt = enteredAt; d.backfilled = takenAt != enteredAt;
+        doses.add(d); return d;
+    }
+
     public List<Finding> audit(long now, ZoneId zone) {
         long start = now - 7L * 24 * 3_600_000;
         List<Finding> out = new ArrayList<>();
@@ -241,7 +248,17 @@ public final class MedicineBook {
         for (Dose d : doses) {
             if (d.voided || d.takenAt < start || d.takenAt > now) continue;
             Plan p = d.planId == null ? null : plan(d.planId);
-            if (p == null) continue;
+            if (p == null) {
+                Plan applicable = null;
+                int count = 0;
+                for (Plan candidate : plans) if (candidate.medicineId.equals(d.medicineId)
+                        && candidate.activeFrom <= d.takenAt && d.takenAt < candidate.activeUntil) {
+                    applicable = candidate; count++;
+                }
+                if (count == 1 && applicable != null && !cycleAllows(applicable, d.takenAt, zone))
+                    out.add(new Finding(d.medicineId, "停药阶段有计划外服药记录", fmt(d.takenAt, zone)));
+                continue;
+            }
             if (d.scheduledAt != null) {
                 if (p.earlyMinutes != null && d.takenAt < d.scheduledAt - p.earlyMinutes * 60_000L)
                     out.add(new Finding(d.medicineId, "早于医嘱时间窗口", fmt(d.takenAt, zone)));

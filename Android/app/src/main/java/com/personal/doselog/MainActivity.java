@@ -63,7 +63,8 @@ public final class MainActivity extends Activity {
                     .setPositiveButton("知道了", (d, w) -> finish()).setCancelable(false).show();
             return;
         }
-        Reminders.sync(this, book);
+        try { Reminders.sync(this, book); }
+        catch (Exception e) { Toast.makeText(this, "提醒暂未安排：" + e.getMessage(), Toast.LENGTH_LONG).show(); }
         render();
     }
 
@@ -85,11 +86,15 @@ public final class MainActivity extends Activity {
     }
 
     private void save() {
-        try { store.save(book); Reminders.sync(this, book); render(); }
+        try { store.save(book); }
         catch (Exception e) {
             try { book = store.load(); render(); } catch (Exception ignored) { }
             Toast.makeText(this, "保存失败，操作未记入：" + e.getMessage(), Toast.LENGTH_LONG).show();
+            return;
         }
+        try { Reminders.sync(this, book); }
+        catch (Exception e) { Toast.makeText(this, "已保存记录，但提醒暂未安排", Toast.LENGTH_LONG).show(); }
+        render();
     }
 
     private int dp(int value) { return (int) (value * getResources().getDisplayMetrics().density + .5f); }
@@ -370,8 +375,13 @@ public final class MainActivity extends Activity {
     }
 
     private void form(String title, LinearLayout box, Runnable submit) {
-        new AlertDialog.Builder(this).setTitle(title).setView(box).setNegativeButton("取消", null)
-                .setPositiveButton("保存", (d, w) -> { try { submit.run(); } catch (Exception e) { new AlertDialog.Builder(this).setMessage("输入有误：" + e.getMessage()).setPositiveButton("知道了", null).show(); } }).show();
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(title).setView(box).setNegativeButton("取消", null)
+                .setPositiveButton("保存", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            try { submit.run(); dialog.dismiss(); }
+            catch (Exception e) { Toast.makeText(this, "请检查输入：" + e.getMessage(), Toast.LENGTH_LONG).show(); }
+        }));
+        dialog.show();
     }
 
     private void addMedicine() {
@@ -402,8 +412,9 @@ public final class MainActivity extends Activity {
         EditText followUp = field(box, "未确认后再次提醒：分钟", "30");
         EditText source = field(box, "医嘱依据（处方或药袋）", "");
         ScrollView scroll = new ScrollView(this); scroll.addView(box);
-        new AlertDialog.Builder(this).setTitle(m.name + " 的用药计划").setView(scroll).setNegativeButton("取消", null)
-                .setPositiveButton("保存", (d, w) -> {
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(m.name + " 的用药计划").setView(scroll).setNegativeButton("取消", null)
+                .setPositiveButton("保存", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                     try {
                         MedicineBook.Plan p = new MedicineBook.Plan(); p.medicineId = m.id;
                         p.amount = positive(amount.getText().toString()); p.activeFrom = System.currentTimeMillis();
@@ -429,9 +440,10 @@ public final class MainActivity extends Activity {
                         if (p.followUpMinutes < 0 || p.followUpMinutes > 10080) throw new IllegalArgumentException("再次提醒须为 0～10080 分钟");
                         p.directionSource = source.getText().toString().trim();
                         if (p.directionSource.isEmpty()) throw new IllegalArgumentException("请填写医嘱依据");
-                        book.plans.add(p); save();
-                    } catch (Exception e) { new AlertDialog.Builder(this).setMessage("计划输入有误：" + e.getMessage()).setPositiveButton("知道了", null).show(); }
-                }).show();
+                        book.plans.add(p); save(); dialog.dismiss();
+                    } catch (Exception e) { Toast.makeText(this, "计划输入有误：" + e.getMessage(), Toast.LENGTH_LONG).show(); }
+                }));
+        dialog.show();
     }
 
     private void stockDialog(MedicineBook.Medicine m) {
@@ -463,7 +475,7 @@ public final class MainActivity extends Activity {
         EditText edit = new EditText(this); edit.setSingleLine(true); edit.setHint("实际服用多少 " + m.unit);
         new AlertDialog.Builder(this).setTitle("记录 " + m.name).setView(edit).setNegativeButton("取消", null)
                 .setPositiveButton("立即记录", (d, w) -> {
-                    try { long now = System.currentTimeMillis(); book.take(m.id, positive(edit.getText().toString()), now, now, zone); save(); Reminders.lowStock(this, book, m); }
+                    try { long now = System.currentTimeMillis(); book.takeUnplanned(m.id, positive(edit.getText().toString()), now, now); save(); Reminders.lowStock(this, book, m); }
                     catch (Exception e) { Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show(); }
                 }).show();
     }
