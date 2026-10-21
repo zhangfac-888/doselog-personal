@@ -1,0 +1,70 @@
+name: Build iPhone app without a Mac
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'DoseLog/**'
+      - 'DoseLogTests/**'
+      - 'DoseLog.xcodeproj/**'
+      - '.github/workflows/build-iphone.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Get source
+        uses: actions/checkout@v4
+
+      - name: Show build environment
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Run existing tests in an iPhone simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          simulator_id="$(xcrun simctl list devices available -j | /usr/bin/python3 -c 'import json,sys; devices=json.load(sys.stdin)["devices"]; print(next(d["udid"] for group in devices.values() for d in group if d["name"].startswith("iPhone")))')"
+          xcodebuild test \
+            -project DoseLog.xcodeproj \
+            -scheme DoseLog \
+            -destination "platform=iOS Simulator,id=${simulator_id}" \
+            -derivedDataPath "$RUNNER_TEMP/DoseLogSimulator" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build an unsigned iPhone app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project DoseLog.xcodeproj \
+            -scheme DoseLog \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/DoseLogDevice" \
+            CODE_SIGNING_ALLOWED=NO
+
+          app="$RUNNER_TEMP/DoseLogDevice/Build/Products/Release-iphoneos/DoseLog.app"
+          test -d "$app"
+          executable="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$app/Info.plist")"
+          file "$app/$executable"
+          /usr/bin/lipo -archs "$app/$executable" | grep -qw arm64
+          mkdir -p "$RUNNER_TEMP/package/Payload" output
+          cp -R "$app" "$RUNNER_TEMP/package/Payload/DoseLog.app"
+          (cd "$RUNNER_TEMP/package" && /usr/bin/zip -qry "$GITHUB_WORKSPACE/output/DoseLog-unsigned.ipa" Payload)
+          shasum -a 256 output/DoseLog-unsigned.ipa
+
+      - name: Make the iPhone installation file available
+        uses: actions/upload-artifact@v4
+        with:
+          name: DoseLog-unsigned-iPhone
+          path: output/DoseLog-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7

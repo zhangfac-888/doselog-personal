@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>用药管理 · 交互演示</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#e9edf3;color:#202936;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .wrap{max-width:420px;min-height:100vh;margin:auto;background:#f8f9fc;box-shadow:0 0 24px #0001;display:flex;flex-direction:column}
+  .notice{padding:10px 16px;background:#fff4d7;color:#6e5200;font-size:12px;line-height:1.5}
+  main{padding:18px 18px 90px;flex:1}h1{font-size:30px;margin:8px 0 22px}h2{font-size:15px;color:#677284;font-weight:600;margin:24px 2px 10px}
+  .card{background:white;border-radius:17px;padding:17px;margin:10px 0;box-shadow:0 2px 12px #273b5b0a}.name{font-weight:700;font-size:19px}.muted{color:#687487;font-size:14px;line-height:1.5;margin-top:6px}
+  .primary{width:100%;border:0;border-radius:11px;background:#087c89;color:white;font-size:16px;font-weight:700;padding:15px;margin-top:16px;cursor:pointer}
+  .primary:disabled{background:#a9b6bc}.secondary{border:1px solid #d9e0e7;border-radius:9px;background:#fff;color:#176675;font-size:14px;padding:10px 12px;cursor:pointer}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}.tag{background:#e8f5f0;color:#11725c;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:600}
+  .item{padding:12px 0;border-bottom:1px solid #e8ebef}.item:last-child{border:0}.time{font-variant-numeric:tabular-nums;color:#576476;font-size:14px}
+  .delete{color:#b14343;border:0;background:none;cursor:pointer;font-size:13px}.empty{color:#87909e;font-size:14px;padding:8px 0}
+  .tabs{display:flex;position:sticky;bottom:0;background:#fff;border-top:1px solid #e5e9ef}.tabs button{flex:1;border:0;background:#fff;color:#778296;padding:13px 4px 16px;font-size:13px;cursor:pointer}.tabs button.active{color:#087c89;font-weight:700}
+  .hide{display:none}.pill{display:inline-block;border-radius:999px;background:#fff1e1;color:#965a10;padding:4px 9px;font-size:12px}.good{color:#11725c}.bad{color:#b14343}
+</style>
+<div class="wrap">
+ <div class="notice">交互演示 · 使用虚构示例药品；演示数据不会写入 iPhone，也不提供真实提醒。</div>
+ <main>
+  <section id="today">
+   <h1>今日用药</h1>
+   <h2>今日应服 · <span id="date"></span></h2>
+   <div class="card"><div class="row"><span class="name">示例药 A</span><span class="tag" id="state">待记录</span></div><div class="muted">计划 08:00 · 1 片</div><button class="primary" id="take">已服示例药 A 1 片，记录现在</button><div class="muted">点击即按当前时间记入具体药品和剂量。</div></div>
+   <h2>今日实际记录</h2><div class="card" id="records"></div>
+   <h2>提醒</h2><div class="card"><div class="muted">真机版可在你主动开启后使用本机通知。此演示页不发送通知。</div></div>
+  </section>
+  <section id="meds" class="hide"><h1>药品与计划</h1><div class="card"><div class="name">示例药 A</div><div class="muted">库存 <span id="stock">12</span> 片 · 安全阈值 5 片</div><div class="muted">每日 08:00 · 每次 1 片</div><div class="muted">仅为演示，真实工程中可添加药品、编辑计划、盘点或补货。</div></div></section>
+  <section id="history" class="hide"><h1>记录与校验</h1><div class="card"><div class="name">近 7 天校验</div><div class="muted">真机版会依据已设置的计划检查漏服、剂量、时间窗和间隔。演示页只显示当前操作记录。</div><div id="audit" class="muted"></div></div><h2>本次演示记录</h2><div class="card" id="all-records"></div></section>
+ </main>
+ <nav class="tabs"><button class="active" data-tab="today">今日</button><button data-tab="meds">药品与计划</button><button data-tab="history">记录与校验</button></nav>
+</div>
+<script>
+(()=>{let events=[];const $=id=>document.getElementById(id);$('date').textContent=new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric'}).format(new Date());
+function draw(){let active=events.filter(e=>!e.voided),fmt=new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});$('take').disabled=active.length>0;$('take').textContent=active.length?'已记录':'已服示例药 A 1 片，记录现在';$('state').textContent=active.length?'已记录':'待记录';$('stock').textContent=12-active.length;
+const rows=active.map(e=>'<div class="item row"><div><b>示例药 A · 1 片</b><div class="time">'+fmt.format(e.at)+'</div></div><button class="delete" data-id="'+e.id+'">删除误记录</button></div>').join('');$('records').innerHTML=rows||'<div class="empty">今天还没有服药记录</div>';$('all-records').innerHTML=rows||'<div class="empty">暂无记录</div>';$('audit').textContent=active.length?'示例药 A：已记录本次服药。':'示例药 A：本次服药尚未记录。';}
+$('take').onclick=()=>{events.push({id:crypto.randomUUID(),at:new Date(),voided:false});draw()};document.addEventListener('click',e=>{const id=e.target?.dataset?.id;if(id){const event=events.find(x=>x.id===id);if(event)event.voided=true;draw()}const tab=e.target?.dataset?.tab;if(tab){for(const el of document.querySelectorAll('main section'))el.classList.toggle('hide',el.id!==tab);for(const el of document.querySelectorAll('.tabs button'))el.classList.toggle('active',el.dataset.tab===tab)}});draw()})();
+</script>
+</html>
