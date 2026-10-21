@@ -15,6 +15,8 @@ jobs:
           gradle-version: '8.13'
       - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - run: gradle -p Android :app:assembleDebug --no-daemon
+      - name: Free build cache before starting emulator
+        run: rm -rf "$HOME/.gradle/caches"
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
