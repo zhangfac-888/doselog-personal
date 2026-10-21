@@ -48,7 +48,7 @@ public final class Reminders {
             if (p.followUpMinutes > 0) desired.add("follow:" + due.key());
         }
         for (String key : previous) if (!desired.contains(key)) alarm.cancel(pending(context, key));
-        for (String key : desired) if (!previous.contains(key)) {
+        for (String key : desired) {
             String[] parts = key.split(":", 3);
             long dueAt = Long.parseLong(parts[2]);
             MedicineBook.Plan p = book.plan(parts[1]);
@@ -82,7 +82,14 @@ public final class Reminders {
     }
 
     static void lowStock(Context context, MedicineBook book, MedicineBook.Medicine medicine) {
-        if (medicine.stockKnown && book.balance(medicine.id).compareTo(medicine.low) < 0)
-            post(context, medicine.name + " 库存偏低", "剩余 " + book.balance(medicine.id).stripTrailingZeros().toPlainString() + " " + medicine.unit + "，请核对并补货。", medicine.id.hashCode());
+        if (!medicine.stockKnown) return;
+        String key = "low:" + medicine.id;
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        boolean low = book.balance(medicine.id).compareTo(medicine.low) < 0;
+        if (!low) { prefs.edit().remove(key).apply(); return; }
+        if (canNotify(context) && !prefs.getBoolean(key, false)) {
+            post(context, "药品库存偏低", "打开应用核对库存并补货。", medicine.id.hashCode());
+            prefs.edit().putBoolean(key, true).apply();
+        }
     }
 }

@@ -20,8 +20,7 @@ public final class ReminderReceiver extends BroadcastReceiver {
                         MedicineBook.Due due = new MedicineBook.Due(plan, at);
                         if (!book.recorded(due)) {
                             String title = parts[0].equals("follow") ? "请核对是否已服药" : "到服药时间了";
-                            Reminders.post(context, title, medicine.label() + " · " + plan.amount.stripTrailingZeros().toPlainString() + medicine.unit
-                                    + " · 计划 " + MedicineBook.fmt(at, ZoneId.systemDefault()), key.hashCode());
+                            Reminders.post(context, title, "计划时间 " + MedicineBook.fmt(at, ZoneId.systemDefault()) + "。打开应用查看具体药品与剂量。", key.hashCode());
                         }
                     }
                 }

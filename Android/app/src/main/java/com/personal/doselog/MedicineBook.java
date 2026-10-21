@@ -170,11 +170,15 @@ public final class MedicineBook {
         return result;
     }
 
-    public boolean recorded(Due due) {
+    public BigDecimal recordedAmount(Due due) {
         BigDecimal total = BigDecimal.ZERO;
         for (Dose d : doses) if (!d.voided && due.planId.equals(d.planId)
                 && d.scheduledAt != null && d.scheduledAt == due.at) total = total.add(d.amount);
-        return total.compareTo(due.amount) >= 0;
+        return total;
+    }
+
+    public boolean recorded(Due due) {
+        return recordedAmount(due).compareTo(due.amount) >= 0;
     }
 
     public Due closestDue(String medicineId, long now, ZoneId zone) {
@@ -191,13 +195,17 @@ public final class MedicineBook {
         return best;
     }
 
-    public Dose takeScheduled(Due due, long takenAt, long enteredAt) {
-        if (plan(due.planId) == null || medicine(due.medicineId) == null || due.amount.signum() <= 0)
+    public Dose takeScheduled(Due due, BigDecimal actualAmount, long takenAt, long enteredAt) {
+        if (plan(due.planId) == null || medicine(due.medicineId) == null || actualAmount == null || actualAmount.signum() <= 0)
             throw new IllegalArgumentException("计划或药品无效");
         Dose d = new Dose();
-        d.medicineId = due.medicineId; d.amount = due.amount; d.planId = due.planId; d.scheduledAt = due.at;
+        d.medicineId = due.medicineId; d.amount = actualAmount; d.planId = due.planId; d.scheduledAt = due.at;
         d.takenAt = takenAt; d.enteredAt = enteredAt; d.backfilled = takenAt != enteredAt;
         doses.add(d); return d;
+    }
+
+    public Dose takeScheduled(Due due, long takenAt, long enteredAt) {
+        return takeScheduled(due, due.amount, takenAt, enteredAt);
     }
 
     public Dose take(String medicineId, BigDecimal amount, long takenAt, long enteredAt, ZoneId zone) {

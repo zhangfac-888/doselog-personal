@@ -76,4 +76,15 @@ public class MedicineBookTest {
         assertEquals(Long.valueOf(at(20, 8, 0)), duplicate.scheduledAt);
         assertTrue(b.audit(at(20, 8, 2), zone).stream().anyMatch(f -> f.title.contains("超过计划")));
     }
+
+    @Test public void partialScheduledDoseKeepsRemainingAmountAndStockAccurate() {
+        MedicineBook b = setup(); MedicineBook.Plan p = daily(b, 8 * 60);
+        MedicineBook.Due due = b.scheduled(at(20, 0, 0), at(20, 23, 0), zone).get(0);
+        b.takeScheduled(due, new BigDecimal("0.5"), at(20, 8, 1), at(20, 8, 1));
+        assertEquals(0, new BigDecimal("0.5").compareTo(b.recordedAmount(due)));
+        assertFalse(b.recorded(due));
+        b.takeScheduled(due, new BigDecimal("0.5"), at(20, 8, 5), at(20, 8, 5));
+        assertTrue(b.recorded(due));
+        assertEquals(0, new BigDecimal("-1").compareTo(b.balance(p.medicineId)));
+    }
 }
