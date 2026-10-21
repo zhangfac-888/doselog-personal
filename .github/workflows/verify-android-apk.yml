@@ -1,0 +1,18 @@
+name: Verify released Android APK
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager 'build-tools;35.0.0' 'platform-tools'
+      - name: Download exact private release file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download android-test-1.0 --repo "$GITHUB_REPOSITORY" --pattern 'DoseLog-Android-test.apk'
+      - name: Inspect package and verify signature
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs DoseLog-Android-test.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging DoseLog-Android-test.apk | head -n 12
