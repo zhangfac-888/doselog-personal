@@ -9,8 +9,9 @@ adb shell pidof com.personal.doselog.preview2
 
 # The emulator contains only a fictitious fixture; it never touches personal data.
 adb shell am force-stop com.personal.doselog.preview2
-adb shell run-as com.personal.doselog.preview2 mkdir -p files
-adb shell run-as com.personal.doselog.preview2 sh -c 'cat > files/medicine-book.json' < Android/test-fixtures/preview.json
+adb push Android/test-fixtures/preview.json /data/local/tmp/doselog-preview.json >/dev/null
+adb shell run-as com.personal.doselog.preview2 mkdir -p /data/user/0/com.personal.doselog.preview2/files
+adb shell run-as com.personal.doselog.preview2 cp /data/local/tmp/doselog-preview.json /data/user/0/com.personal.doselog.preview2/files/medicine-book.json
 adb shell am start -n com.personal.doselog.preview2/com.personal.doselog.MainActivity
 sleep 3
 adb exec-out screencap -p > Android/ui-smoke/today-before.png
