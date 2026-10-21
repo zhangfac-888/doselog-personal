@@ -4,7 +4,8 @@ android {
     namespace 'com.personal.doselog'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.personal.doselog'
+        // UI preview installs alongside the earlier test APK, preserving its local records.
+        applicationId 'com.personal.doselog.preview2'
         minSdk 26
         targetSdk 35
         versionCode 1

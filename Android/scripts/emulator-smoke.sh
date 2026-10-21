@@ -3,14 +3,14 @@ set -euo pipefail
 
 mkdir -p Android/ui-smoke
 adb install Android/app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.personal.doselog/.MainActivity
+adb shell am start -n com.personal.doselog.preview2/com.personal.doselog.MainActivity
 sleep 3
-adb shell pidof com.personal.doselog
+adb shell pidof com.personal.doselog.preview2
 
 # The emulator contains only a fictitious fixture; it never touches personal data.
-adb shell am force-stop com.personal.doselog
-adb shell run-as com.personal.doselog sh -c 'cat > files/medicine-book.json' < Android/test-fixtures/preview.json
-adb shell am start -n com.personal.doselog/.MainActivity
+adb shell am force-stop com.personal.doselog.preview2
+adb shell run-as com.personal.doselog.preview2 sh -c 'cat > files/medicine-book.json' < Android/test-fixtures/preview.json
+adb shell am start -n com.personal.doselog.preview2/com.personal.doselog.MainActivity
 sleep 3
 adb exec-out screencap -p > Android/ui-smoke/today-before.png
 adb shell uiautomator dump /sdcard/window.xml >/dev/null
@@ -31,7 +31,7 @@ sleep 2
 adb exec-out screencap -p > Android/ui-smoke/today-after.png
 adb shell uiautomator dump /sdcard/window.xml >/dev/null
 adb pull /sdcard/window.xml Android/ui-smoke/after.xml >/dev/null
-adb shell run-as com.personal.doselog cat files/medicine-book.json > Android/ui-smoke/saved.json
+adb shell run-as com.personal.doselog.preview2 cat files/medicine-book.json > Android/ui-smoke/saved.json
 python3 - <<'PY'
 import json, xml.etree.ElementTree as ET
 data = json.load(open('Android/ui-smoke/saved.json', encoding='utf-8'))
