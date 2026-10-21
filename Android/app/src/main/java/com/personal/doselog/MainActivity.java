@@ -45,13 +45,14 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         store = new BookStore(this);
-        try { book = store.load(); Reminders.sync(this, book); }
+        try { book = store.load(); }
         catch (Exception e) {
             new AlertDialog.Builder(this).setTitle("本机数据读取失败")
                     .setMessage("数据不会被覆盖。请保留应用，并联系开发者处理。\n" + e.getMessage())
                     .setPositiveButton("知道了", (d, w) -> finish()).setCancelable(false).show();
             return;
         }
+        Reminders.sync(this, book);
         render();
     }
 
@@ -84,8 +85,7 @@ public final class MainActivity extends Activity {
         if (book == null) return;
         ScrollView scroll = new ScrollView(this); root = column(); root.setPadding(dp(18), dp(12), dp(18), dp(35)); scroll.addView(root);
         scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-            view.setPadding(0, bars.top, 0, bars.bottom); return insets;
+            view.setPadding(0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom()); return insets;
         });
         setContentView(scroll);
         root.addView(text("用药记录", 28, true));
@@ -108,10 +108,11 @@ public final class MainActivity extends Activity {
             MedicineBook.Due due = book.closestDue(m.id, now, zone);
             String label = due == null ? "" : " · 本次计划 " + MedicineBook.fmt(due.at, zone) + " / " + dose(due.amount) + m.unit;
             root.addView(text(m.label() + label, 16, true));
-            if (due != null) root.addView(button("已服 " + m.name + " " + dose(due.amount) + m.unit + " · 记当前时间", () -> {
+            if (due != null && !book.recorded(due)) root.addView(button("已服 " + m.name + " " + dose(due.amount) + m.unit + " · 记当前时间", () -> {
                 book.take(m.id, due.amount, System.currentTimeMillis(), System.currentTimeMillis(), zone);
                 save(); Reminders.lowStock(this, book, m);
             }));
+            else if (due != null) root.addView(text("本次计划已记录", 14, false));
             else root.addView(button("记录 " + m.name + "（选择剂量）", () -> manualDose(m)));
             if (m.stockKnown) root.addView(text("库存 " + dose(book.balance(m.id)) + m.unit + (book.balance(m.id).compareTo(m.low) < 0 ? " · 低于安全线" : ""), 13, false));
         }

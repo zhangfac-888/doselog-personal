@@ -30,6 +30,7 @@ public class MedicineBookTest {
 
     @Test public void oneTapMatchesSpecificPlanAndAuditDetectsMissing() {
         MedicineBook b = setup(); MedicineBook.Plan p = daily(b, 8 * 60);
+        p.activeFrom = at(20, 0, 0);
         MedicineBook.Dose d = b.take(p.medicineId, BigDecimal.ONE, at(20, 8, 2), at(20, 8, 2), zone);
         assertEquals(p.id, d.planId); assertEquals(Long.valueOf(at(20, 8, 0)), d.scheduledAt);
         assertTrue(b.audit(at(20, 8, 31), zone).isEmpty());

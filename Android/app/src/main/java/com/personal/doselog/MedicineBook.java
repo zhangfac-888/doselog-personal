@@ -178,14 +178,18 @@ public final class MedicineBook {
     }
 
     public Due closestDue(String medicineId, long now, ZoneId zone) {
-        Due best = null;
+        Due best = null, alreadyRecorded = null;
         long distance = Long.MAX_VALUE;
+        long recordedDistance = Long.MAX_VALUE;
         for (Due due : scheduled(now - 24L * 3_600_000, now + 24L * 3_600_000, zone)) {
-            if (!due.medicineId.equals(medicineId) || recorded(due)) continue;
+            if (!due.medicineId.equals(medicineId)) continue;
             long delta = Math.abs(due.at - now);
-            if (delta < distance) { distance = delta; best = due; }
+            if (delta > 12L * 3_600_000) continue;
+            if (recorded(due)) {
+                if (delta < recordedDistance) { recordedDistance = delta; alreadyRecorded = due; }
+            } else if (delta < distance) { distance = delta; best = due; }
         }
-        return best;
+        return best != null ? best : alreadyRecorded;
     }
 
     public Dose take(String medicineId, BigDecimal amount, long takenAt, long enteredAt, ZoneId zone) {
